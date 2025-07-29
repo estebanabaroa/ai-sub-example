@@ -69,6 +69,8 @@ subplebbit.on('challengeverification', async (challengeVerification) => {
   const reply = 'this is the reply'
 
   const comment = await plebbit.createComment({
+    parentCid: challengeVerification.commentUpdate.cid,
+    postCid: challengeVerification.commentUpdate.cid,
     content: reply,
     subplebbitAddress: subplebbit.address,
     signer: botSigner,
