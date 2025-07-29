@@ -1,0 +1,7 @@
+node_modules
+.ipfs
+.plebbit
+ipfs
+bin
+state.json
+TODO.md
