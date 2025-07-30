@@ -43,9 +43,49 @@ const botSigner = await plebbit.createSigner(createSignerOptions)
 state.botPrivateKey = botSigner.privateKey
 console.log('bot', botSigner.address)
 
-// whitelist the bot
+// set antispam challenges and whitelist the bot
 await subplebbit.edit({
-  settings: {challenges: []}
+  settings: {challenges: [
+    {
+      name: 'publication-match',
+      options: {
+        matches: JSON.stringify([{'propertyName':'author.address','regexp':'\\.(sol|eth)$'}]),
+        error: 'Posting in this community requires a username (author address) that ends with .eth or .sol. Go to the settings to set your username.'
+      },
+      exclude: [
+        // exclude mods
+        {role: ['moderator', 'admin', 'owner']},
+        // exclude old users
+        {
+          firstCommentTimestamp: 60 * 60 * 24 * 30, // 1 month
+          postScore: 3,
+          rateLimit: 2,
+          replyScore: 0
+        },
+        {challenges: [1]}
+      ]
+    },
+    {
+      name: 'whitelist',
+      options: {
+        addresses: botSigner.address,
+        urls: 'https://raw.githubusercontent.com/plebbit/lists/refs/heads/master/whitelist-challenge.json',
+        error: 'Or posting in this community requires being whitelisted. Go to https://t.me/plebbit and ask to be whitelisted.'
+      },
+      exclude: [
+        // exclude mods
+        {role: ['moderator', 'admin', 'owner']},
+        // exclude old users
+        {
+          firstCommentTimestamp: 60 * 60 * 24 * 30, // 1 month
+          postScore: 3,
+          rateLimit: 2,
+          replyScore: 0
+        },
+        {challenges: [0]}
+      ]
+    }
+  ]}
 })
 
 // make the bot answer every comment
