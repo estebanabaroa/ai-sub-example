@@ -183,9 +183,9 @@ const startIpfs = async () => {
 
   // set swarm port
   const ipfsConfigPath = path.join(ipfsDataPath, 'config')
-  const config = JSON.parse(await fs.readFile(ipfsConfigPath, 'utf-8'))
-  config.Addresses.Swarm = config.Addresses.Swarm.map(a =>a.replace(/(tcp|udp)\/\d+/g, `$1/${ipfsSwarmPort}`))
-  await fs.writeFile(ipfsConfigPath, JSON.stringify(config, null, 2))
+  const ipfsConfig = JSON.parse(await fs.readFile(ipfsConfigPath, 'utf-8'))
+  ipfsConfig.Addresses.Swarm = ipfsConfig.Addresses.Swarm.map(a => a.replace(/(tcp|udp)\/\d+/g, `$1/${ipfsSwarmPort}`))
+  await fs.writeFile(ipfsConfigPath, JSON.stringify(ipfsConfig, null, 2))
 
   // create http routers config
   const httpRoutersConfig = {
