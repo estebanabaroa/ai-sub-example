@@ -83,6 +83,7 @@ subplebbit.on('challengeverification', async (challengeVerification) => {
 console.log('starting...')
 await subplebbit.start()
 console.log('started')
+// console.log('ipnsPubsubTopicRoutingCid:', subplebbit.ipnsPubsubTopicRoutingCid)
 
 console.log('publish test comment')
 const signer = await plebbit.createSigner()

@@ -187,6 +187,14 @@ const startIpfs = async () => {
   ipfsConfig.Addresses.Swarm = ipfsConfig.Addresses.Swarm.map(a => a.replace(/(tcp|udp)\/\d+/g, `$1/${ipfsSwarmPort}`))
   await fs.writeFile(ipfsConfigPath, JSON.stringify(ipfsConfig, null, 2))
 
+  // set relays
+  const relays = [
+    '/ip4/194.11.226.35/tcp/4001/p2p/12D3KooWDfnXqdZfsoqKbcYEDKRttt3adumB5m6tw8YghPwMAz8V',
+    '/ip4/194.11.226.35/udp/4001/quic-v1/p2p/12D3KooWDfnXqdZfsoqKbcYEDKRttt3adumB5m6tw8YghPwMAz8V',
+    '/dns4/194-11-226-35.k51qzi5uqu5dhlxz4gos5ph4wivip9rgsg6tywpypccb403b0st1nvzhw8as9q.libp2p.direct/tcp/4001/tls/ws/p2p/12D3KooWDfnXqdZfsoqKbcYEDKRttt3adumB5m6tw8YghPwMAz8V'
+  ]
+  await spawnAsync(ipfsPath, ['config', '--json', 'Swarm.RelayClient.StaticRelays', JSON.stringify(relays)], {env, hideWindows: true})
+
   // create http routers config
   const httpRoutersConfig = {
     HttpRoutersParallel: {Type: 'parallel', Parameters: {Routers: []}},
