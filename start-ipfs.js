@@ -15,6 +15,7 @@ import AddressesRewriterProxyServer from './lib/addresses-rewriter-proxy-server.
 const basicAuthUsername = process.env.IPFS_BASIC_AUTH_USERNAME
 const basicAuthPassword = process.env.IPFS_BASIC_AUTH_PASSWORD
 
+const ipfsSwarmPort = 7001
 const proxyIpfsApiPort = 6003
 const ipfsGatewayPort = 6002
 const ipfsApiPort = 6001
@@ -179,6 +180,12 @@ const startIpfs = async () => {
 
   // set api port
   await spawnAsync(ipfsPath, ['config', 'Addresses.API', `/ip4/127.0.0.1/tcp/${ipfsApiPort}`], {env, hideWindows: true})
+
+  // set swarm port
+  const ipfsConfigPath = path.join(ipfsDataPath, 'config')
+  const config = JSON.parse(await fs.readFile(ipfsConfigPath, 'utf-8'))
+  config.Addresses.Swarm = config.Addresses.Swarm.map(a =>a.replace(/(tcp|udp)\/\d+/g, `$1/${ipfsSwarmPort}`))
+  await fs.writeFile(ipfsConfigPath, JSON.stringify(config, null, 2))
 
   // create http routers config
   const httpRoutersConfig = {
