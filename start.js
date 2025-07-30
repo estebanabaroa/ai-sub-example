@@ -25,6 +25,13 @@ const plebbit = await Plebbit({
 plebbit.on('error', error => {
   console.log(error) // logging plebbit errors are only useful for debugging, not production
 })
+const testSigner = await plebbit.createSigner()
+
+// whitelist your own addresses here
+const whitelist = [
+  testSigner.address,
+  '12D3KooWLZ17hgteXM78HzMftG7JFypGXqkwVTwdab8EqxgKJp1t'
+]
 
 // create subplebbit
 const createSubplebbitOptions = state.subplebbitAddress ? {address: state.subplebbitAddress} : undefined
@@ -68,7 +75,7 @@ await subplebbit.edit({
     {
       name: 'whitelist',
       options: {
-        addresses: botSigner.address,
+        addresses: [botSigner.address, ...whitelist].join(','),
         urls: 'https://raw.githubusercontent.com/plebbit/lists/refs/heads/master/whitelist-challenge.json',
         error: 'Or posting in this community requires being whitelisted. Go to https://t.me/plebbit and ask to be whitelisted.'
       },
@@ -103,14 +110,15 @@ subplebbit.on('challengeverification', async (challengeVerification) => {
     return
   }
   const content = `${challengeVerification.comment.title || ''}\n\n${challengeVerification.comment.content || ''}`.trim()
-  console.log('new comment:', {content})
+  const cid = challengeVerification.commentUpdate.cid
+  console.log('new comment:', {cid, content})
 
   // get reply from AI
   const reply = 'this is the reply'
 
   const comment = await plebbit.createComment({
-    parentCid: challengeVerification.commentUpdate.cid,
-    postCid: challengeVerification.commentUpdate.cid,
+    parentCid: cid,
+    postCid: cid,
     content: reply,
     subplebbitAddress: subplebbit.address,
     signer: botSigner,
@@ -126,13 +134,12 @@ console.log('started')
 // console.log('ipnsPubsubTopicRoutingCid:', subplebbit.ipnsPubsubTopicRoutingCid)
 
 console.log('publish test comment')
-const signer = await plebbit.createSigner()
 const comment = await plebbit.createComment({
   title: 'comment title',
   content: 'comment content',
   subplebbitAddress: subplebbit.address,
-  signer: signer,
-  author: {address: signer.address},
+  signer: testSigner,
+  author: {address: testSigner.address},
 })
 comment.once('challenge', () => comment.publishChallengeAnswers(['']))
 await comment.publish()
