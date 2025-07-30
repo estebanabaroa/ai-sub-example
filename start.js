@@ -5,6 +5,11 @@ import path from 'path'
 import {fileURLToPath} from 'url'
 const rootPath = path.dirname(fileURLToPath(import.meta.url))
 
+// whitelist your own addresses here
+const whitelist = [
+  '12D3KooWLZ17hgteXM78HzMftG7JFypGXqkwVTwdab8EqxgKJp1t'
+]
+
 // save state to disk every 1s
 let state = {}
 const statePath = path.join(rootPath, 'state.json')
@@ -20,18 +25,12 @@ const plebbit = await Plebbit({
   kuboRpcClientsOptions: ['http://127.0.0.1:6001/api/v0'],
   pubsubKuboRpcClientsOptions: ['http://127.0.0.1:6001/api/v0'],
   httpRoutersOptions: [],
-  dataPath: path.join(rootPath, '.plebbit')
+  dataPath: path.join(rootPath, '.plebbit'),
+  publishUpdate: 1000
 })
 plebbit.on('error', error => {
   console.log(error) // logging plebbit errors are only useful for debugging, not production
 })
-const testSigner = await plebbit.createSigner()
-
-// whitelist your own addresses here
-const whitelist = [
-  testSigner.address,
-  '12D3KooWLZ17hgteXM78HzMftG7JFypGXqkwVTwdab8EqxgKJp1t'
-]
 
 // create subplebbit
 const createSubplebbitOptions = state.subplebbitAddress ? {address: state.subplebbitAddress} : undefined
@@ -48,7 +47,12 @@ subplebbit.on('error', (...args) => console.log('subplebbit error', ...args))
 const createSignerOptions = state.botPrivateKey ? {privateKey: state.botPrivateKey, type: 'ed25519'} : undefined
 const botSigner = await plebbit.createSigner(createSignerOptions)
 state.botPrivateKey = botSigner.privateKey
+whitelist.push(botSigner.address)
 console.log('bot', botSigner.address)
+
+// create test author
+const testSigner = await plebbit.createSigner()
+whitelist.push(testSigner.address)
 
 // set antispam challenges and whitelist the bot
 await subplebbit.edit({
@@ -75,7 +79,7 @@ await subplebbit.edit({
     {
       name: 'whitelist',
       options: {
-        addresses: [botSigner.address, ...whitelist].join(','),
+        addresses: whitelist.join(','),
         urls: 'https://raw.githubusercontent.com/plebbit/lists/refs/heads/master/whitelist-challenge.json',
         error: 'Or posting in this community requires being whitelisted. Go to https://t.me/plebbit and ask to be whitelisted.'
       },
@@ -133,13 +137,18 @@ await subplebbit.start()
 console.log('started')
 // console.log('ipnsPubsubTopicRoutingCid:', subplebbit.ipnsPubsubTopicRoutingCid)
 
-console.log('publish test comment')
+console.log('publishing test comment...')
 const comment = await plebbit.createComment({
   title: 'comment title',
   content: 'comment content',
   subplebbitAddress: subplebbit.address,
-  signer: testSigner,
-  author: {address: testSigner.address},
+  signer: testSigner
 })
 comment.once('challenge', () => comment.publishChallengeAnswers(['']))
+comment.once('challengeverification', (challengeVerification) => {
+  console.log('published test comment success', challengeVerification.challengeSuccess)
+  if (challengeVerification.challengeErrors) {
+    console.log(challengeVerification.challengeErrors)
+  }
+})
 await comment.publish()
