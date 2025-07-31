@@ -102,7 +102,7 @@ await subplebbit.edit({
 // make the bot answer every comment
 subplebbit.on('challengeverification', async (challengeVerification) => {
   if (!challengeVerification.challengeSuccess) {
-    console.log('failed challenge verification')
+    console.log('failed challenge verification', challengeVerification.reason, challengeVerification.challengeErrors)
     return
   }
   if (!challengeVerification.comment) {
