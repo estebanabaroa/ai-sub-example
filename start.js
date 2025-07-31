@@ -115,6 +115,7 @@ subplebbit.on('challengeverification', async (challengeVerification) => {
   }
   const content = `${challengeVerification.comment.title || ''}\n\n${challengeVerification.comment.content || ''}`.trim()
   const cid = challengeVerification.commentUpdate.cid
+  const postCid = challengeVerification.comment.postCid || challengeVerification.commentUpdate.cid
   console.log('new comment:', {cid, content})
 
   // get reply from AI
@@ -122,7 +123,7 @@ subplebbit.on('challengeverification', async (challengeVerification) => {
 
   const comment = await plebbit.createComment({
     parentCid: cid,
-    postCid: cid,
+    postCid,
     content: reply,
     subplebbitAddress: subplebbit.address,
     signer: botSigner,
