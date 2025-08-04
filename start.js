@@ -218,7 +218,7 @@ async function getParentComments(_parentCid) {
   while (true) {
     const comment = await plebbit.getComment(_parentCid)
     const {cid, timestamp, title, content, author, depth} = comment
-    parents.push({tcid, timestamp, title, content, author, depth})
+    parents.push({cid, timestamp, title, content, author, depth})
     _parentCid = parentCid
     if (comment.depth === 0) {
       break
