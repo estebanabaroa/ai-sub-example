@@ -197,9 +197,11 @@ async function getFullPostReplies(postCid) {
 
 function extractCommentValues(comments = []) {
   return comments.map(function(comment) {
-    const {cid, content, author, depth, replies} = comment
+    const {cid, timestamp, content, author, depth, replies} = comment
     return {
       cid,
+      timestamp,
+      title,
       content,
       author,
       depth,
@@ -215,8 +217,8 @@ async function getParentComments(_parentCid) {
   const parents = []
   while (true) {
     const comment = await plebbit.getComment(_parentCid)
-    const {title, content, cid, parentCid, depth, author} = comment
-    parents.push({title, content, depth, author})
+    const {cid, timestamp, title, content, author, depth} = comment
+    parents.push({tcid, timestamp, title, content, author, depth})
     _parentCid = parentCid
     if (comment.depth === 0) {
       break
