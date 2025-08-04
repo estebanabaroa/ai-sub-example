@@ -5,9 +5,20 @@ import path from 'path'
 import {fileURLToPath} from 'url'
 const rootPath = path.dirname(fileURLToPath(import.meta.url))
 
-// whitelist your own addresses here
+// whitelist your own posters addresses here (your normal users)
 const whitelist = [
   '12D3KooWLZ17hgteXM78HzMftG7JFypGXqkwVTwdab8EqxgKJp1t'
+]
+
+// add your own admins here
+const admins = [
+
+]
+
+// add your own moderators here
+const moderators = [
+  'estebanabaroa.eth',
+  'plebeius.eth'
 ]
 
 // save state to disk every 1s
@@ -54,8 +65,17 @@ console.log('bot', botSigner.address)
 const testSigner = await plebbit.createSigner()
 whitelist.push(testSigner.address)
 
-// set antispam challenges and whitelist the bot
+const roles = {}
+moderators.forEach(moderatorAddress => {
+  roles[moderatorAddress] = {role: 'moderator'}
+})
+admins.forEach(adminAddress => {
+  roles[adminAddress] = {role: 'admin'}
+})
+
+// set roles, antispam challenges and whitelist the bot
 await subplebbit.edit({
+  roles,
   settings: {challenges: [
     {
       name: 'publication-match',
@@ -119,6 +139,8 @@ subplebbit.on('challengeverification', async (challengeVerification) => {
   console.log('new comment:', {cid, content})
 
   // get reply from AI
+  const fullPostContext = await getFullPostReplies(postCid)
+  const parentComments = await getParentComments(cid)
   const reply = 'this is the reply'
 
   const comment = await plebbit.createComment({
@@ -129,6 +151,7 @@ subplebbit.on('challengeverification', async (challengeVerification) => {
     signer: botSigner,
     author: {address: botSigner.address, displayName: 'bot'},
   })
+  comment.on('error', (error) => console.log('error publishing bot reply', error))
   comment.publish()
 })
 
@@ -137,6 +160,7 @@ console.log('starting...')
 await subplebbit.start()
 console.log('started')
 // console.log('ipnsPubsubTopicRoutingCid:', subplebbit.ipnsPubsubTopicRoutingCid)
+// console.log(subplebbit.roles, subplebbit.settings.challenges)
 
 console.log('publishing test comment...')
 const comment = await plebbit.createComment({
@@ -152,4 +176,51 @@ comment.once('challengeverification', (challengeVerification) => {
     console.log(challengeVerification.challengeErrors)
   }
 })
+comment.on('error', (error) => console.log('error publishing test comment', error))
 await comment.publish()
+
+// util functions to get the post context for the ai
+async function getFullPostReplies(postCid) {
+  const comment = await plebbit.createComment({cid: postCid})
+  const updatePromise = new Promise(resolve => {
+    comment.on('update', () => {
+      if (comment.updatedAt) resolve()
+    })
+    comment.on('error', resolve)
+  })
+  await comment.update()
+  await updatePromise
+  await comment.stop()
+  const rawReplies = comment.replies?.pages?.best?.comments || []
+  return extractCommentValues(rawReplies)
+}
+
+function extractCommentValues(comments = []) {
+  return comments.map(function(comment) {
+    const {cid, content, author, depth, replies} = comment
+    return {
+      cid,
+      content,
+      author,
+      depth,
+      replies: replies?.pages?.best?.comments
+        ? extractCommentValues(replies.pages.best.comments)
+        : []
+    }
+  })
+}
+
+// util functions to get the full parent discussion only
+async function getParentComments(_parentCid) {
+  const parents = []
+  while (true) {
+    const comment = await plebbit.getComment(_parentCid)
+    const {title, content, cid, parentCid, depth, author} = comment
+    parents.push({title, content, depth, author})
+    _parentCid = parentCid
+    if (comment.depth === 0) {
+      break
+    }
+  }
+  return parents
+}
