@@ -197,7 +197,7 @@ async function getFullPostReplies(postCid) {
 
 function extractCommentValues(comments = []) {
   return comments.map(function(comment) {
-    const {cid, timestamp, content, author, depth, replies} = comment
+    const {cid, timestamp, title, content, author, depth, replies} = comment
     return {
       cid,
       timestamp,
