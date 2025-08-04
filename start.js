@@ -138,10 +138,10 @@ subplebbit.on('challengeverification', async (challengeVerification) => {
   const postCid = challengeVerification.comment.postCid || challengeVerification.commentUpdate.cid
   console.log('new comment:', {cid, content})
 
-  // get reply from AI
+  // get reply from ai using full post and/or parent comments context
   const fullPostContext = await getFullPostReplies(postCid)
-  const parentComments = await getParentComments(cid)
-  const reply = 'this is the reply'
+  const parentCommentsContext = await getParentComments(cid)
+  const reply = 'this is the reply' // replace this with ai api call
 
   const comment = await plebbit.createComment({
     parentCid: cid,
